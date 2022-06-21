@@ -72,6 +72,7 @@ class XlsxTransformer(Transformer):
         return res
 
     def __transSheet(self,sheet)->str:
+        ipdb.set_trace()
         colNumber = sheet.max_column
         content = []
         for row in sheet.rows:
@@ -79,7 +80,7 @@ class XlsxTransformer(Transformer):
         return self.render.renderTable(colNumber,"\n".join(content),"","")
 
     def transWorkbook(self,configure:args.Configure)->str:
-        wb = openpyxl.load_workbook(configure.sourceFile(),read_only=True)
+        wb = openpyxl.load_workbook(configure.sourceFile())
         latexSheets = []
         if configure.sheets() == None:
             for sheet in wb:
