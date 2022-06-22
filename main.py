@@ -1,6 +1,8 @@
+from bleach import clean
 import xlrd
 import ipdb
 import openpyxl
+from openpyxl.worksheet.worksheet import Worksheet
 import args
 
 class LatexRender:
@@ -35,10 +37,11 @@ class XlsTransformer(Transformer):
         res = self.__transCell(row[0])
         for cell in row[1:]:
             res += f" & {self.__transCell(cell)}"
-        res += "\\\\\\hline"
+        res += "\\\\"
         return res
 
     def __transSheet(self,sheet)->str:
+        ipdb.set_trace()
         colNumber = sheet.ncols
         rowNumber = sheet.nrows
         content = []
@@ -47,6 +50,8 @@ class XlsTransformer(Transformer):
         return self.render.renderTable(colNumber,"\n".join(content),"","")
 
     def transWorkbook(self,configure:args.Configure) -> str:
+        print("暂不支持")
+        return ""
         source = xlrd.open_workbook(configure.sourceFile())
         latexSheets = []
         if configure.sheets() == None:
@@ -62,21 +67,31 @@ class XlsxTransformer(Transformer):
         super().__init__(render)
 
     def __transCell(self,cell)->str:
+        if cell.value is None:
+            return ""
         return str(cell.value)
 
     def __transRow(self,row)->str:
         res = self.__transCell(row[0])
         for cell in row[1:]:
             res += f" & {self.__transCell(cell)}"
-        res += "\\\\\\hline"
+        res += "\\\\"
         return res
 
-    def __transSheet(self,sheet)->str:
-        ipdb.set_trace()
+    def __transSheet(self,sheet:Worksheet)->str:
+        mergedCells:list = sheet.merged_cells.ranges
+        mergedCells.sort(key=lambda cell:cell.min_row)
         colNumber = sheet.max_column
         content = []
-        for row in sheet.rows:
-            content.append(self.__transRow(row))
+        mergedIndex = 0
+        for index,row in enumerate(sheet.rows):
+            if mergedCells[mergedIndex].min_row > index+1:
+                content.append(self.__transRow(row) + "\\hline")
+            elif mergedCells[mergedIndex].max_row == index+1:
+                content.append(self.__transRow(row) + "\\hline")
+                mergedIndex += 1
+            else:
+                content.append(self.__transRow(row))
         return self.render.renderTable(colNumber,"\n".join(content),"","")
 
     def transWorkbook(self,configure:args.Configure)->str:
